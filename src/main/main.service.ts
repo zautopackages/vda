@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ProcessImageResponse } from 'src/common/interfaces/interfaces';
+import { LlmResponse } from 'src/llm/llm.interfaces';
 import { MarkdownService } from 'src/markdown/markdown.service';
 import { OcrService } from 'src/ocr/ocr.service';
 
@@ -23,4 +24,26 @@ export class MainService{
         console.log(ocrContent,markdownContent);
         return { ocrContent, markdownContent };
     }
+
+    /**
+     * Extracts OCR content from a file buffer.
+     * @remarks This method is used to extract OCR content from a file buffer.
+     * @param fileBuffer - The buffer of the file to be processed.
+     * @returns An object containing the extracted OCR content.
+     */
+    async extractOcrFromImage(fileBuffer: Buffer): Promise<LlmResponse> {
+        return this.ocrService.extractOcr(fileBuffer);
+    }
+
+    /**
+     * Converts OCR content to Markdown format.
+     * @remarks This method is used to convert OCR content to Markdown format.
+     * @param fileBuffer - The buffer of the file to be processed.
+     * @param ocrContent - The OCR content to be converted.
+     * @returns An object containing the converted Markdown content.
+     */
+    async convertToMarkdownFromOcr(fileBuffer: Buffer, ocrContent: string): Promise<LlmResponse> {
+        return this.markdownService.convertToMarkdown(fileBuffer, ocrContent);
+    }
+     
 }
