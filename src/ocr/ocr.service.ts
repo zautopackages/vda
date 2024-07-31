@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import { join } from 'path';
 import { LLM_MODELS } from 'src/common/constants/llm.models';
@@ -15,54 +15,77 @@ const rootPath = process.cwd();
 
 @Injectable()
 export class OcrService {
+    private readonly logger = new Logger(OcrService.name);
+
     constructor(
         private readonly llmService: LlmService,
         private readonly jsonService: JsonService
     ) { }
 
     async extractOcr(fileBuffer: Buffer): Promise<LlmResponse> {
+        this.logger.debug(`Extracting OCR from image`);
+        let result: string;
+        let totalInputTokens, totalOutputTokens;
         try {
+            this.logger.debug(`Extracting Tesseract OCR`);
             const tempFilePath = join(rootPath, SERVE_STATIC_PATH, `temp_${Date.now()}_${Math.floor(Math.random() * 1000)}`);
             fs.writeFileSync(tempFilePath, fileBuffer);
-            const result = await this.tesseract(tempFilePath);
+            result = await this.tesseract(tempFilePath);
             const documents = fs.readFileSync(tempFilePath);
             fs.unlinkSync(tempFilePath);
+            this.logger.debug(`Tesseract OCR extracted successfully`);
+            this.logger.debug(`Correcting OCR with LLM`);
             const { temperature, top_k, top_p } = MODEL_PARAMETERS.OCR_CORRECTER_PROMPT;
-
+            const ocrModel = process.env.OCR_MODEL;
+            if (!Object.values(LLM_MODELS).includes(ocrModel)) {
+                this.logger.error(`Invalid OCR model: ${ocrModel}`);
+                throw new Error(`Model ${ocrModel} is not in the list of allowed models`);
+            }
             for (let retry = 1; retry <= 3; retry++) {
                 const timestamp = new Date().toISOString();
                 const prompt = OCR_CORRECTER_PROMPT.replace("{{ocr_content}}", result);
                 const dynamicPrompt = `${prompt}\n\nTimestamp: ${timestamp}`;
-
                 try {
                     const { content, inputTokens, outputTokens, model } = await this.llmService.generate({
                         prompt: dynamicPrompt,
                         documents,
-                        model: LLM_MODELS.bedrock.ANTHROPIC_CLAUDE_3_SONNET,
+                        model: ocrModel,
                         temperature,
                         top_k,
                         top_p
                     });
-
+                    totalInputTokens += inputTokens;
+                    totalOutputTokens += outputTokens;
                     const response = extractJsonFromMarkdown(content);
                     if (!response) {
-                        console.log(`Failed to extract JSON from the response: ${content}`);
+                        this.logger.warn(`Failed to extract JSON from the response: ${content}`);
                         const correctedResponse = await this.jsonService.correctJson(content);
                         if (!correctedResponse) {
-                            throw new Error("Failed to extract JSON from the response");
+                            this.logger.error(`Failed to correct JSON from the response: ${content}`);
+                            throw new Error(`Failed to extract JSON from the response: ${correctedResponse}`);
                         }
-                        return correctedResponse.corrected_text;
+                        this.logger.debug(`JSON corrected successfully`);
+                        this.logger.debug(`OCR extracted successfully`);
+                        return { content: correctedResponse.corrected_text, inputTokens: totalInputTokens, outputTokens:totalOutputTokens, model };
                     }
-                    return {content: response.corrected_text,inputTokens,outputTokens,model};
+                    this.logger.debug(`OCR extracted successfully`);
+                    return { content: response.corrected_text, inputTokens: totalInputTokens, outputTokens:totalOutputTokens, model };
                 } catch (error) {
-                    console.error(`Attempt ${retry} failed: ${error.message}`);
+                    this.logger.error(`Attempt ${retry} failed: ${error.message}`);
                     if (retry === 3) throw new Error(`Failed after 3 attempts: ${error.message}`);
                 }
             }
         } catch (err) {
-            console.log(err);
-            return null;
+            this.logger.error(`Error extracting OCR: ${err.message}`);
         }
+
+        if (result) {
+            this.logger.debug(`Returning Tesseract OCR result as fallback`);
+            return { content: result, inputTokens: 0, outputTokens: 0, model: 'Tesseract' };
+        }
+
+        this.logger.error(`OCR extraction failed completely`);
+        return null;
     }
 
     async tesseract(path: string): Promise<string> {
@@ -70,7 +93,7 @@ export class OcrService {
             const result = await Tesseract.recognize(path, 'eng');
             return result.data.text;
         } catch (err) {
-            console.log(err);
+            this.logger.error(`Tesseract OCR failed: ${err.message}`);
             return null;
         }
     }

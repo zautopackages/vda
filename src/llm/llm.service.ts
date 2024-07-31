@@ -12,11 +12,11 @@ export class LlmService {
         private readonly bedRockService: BedRockService,
       ) 
       {
-        this.clients.set(LLM_MODELS.bedrock.ANTHROPIC_CLAUDE_3_HAIKU,this.bedRockService)
-        this.clients.set(LLM_MODELS.bedrock.ANTHROPIC_CLAUDE_3_SONNET, this.bedRockService)
-        this.clients.set(LLM_MODELS.bedrock.ANTHROPIC_CLAUDE_3_5_SONNET, this.bedRockService)
-        this.clients.set(LLM_MODELS.bedrock.MISTRAL_MISTRAL_7B_INSTRUCT, this.bedRockService)
-        this.clients.set(LLM_MODELS.bedrock.LLAMA_3, this.bedRockService)
+        this.clients.set(LLM_MODELS.ANTHROPIC_CLAUDE_3_HAIKU,this.bedRockService)
+        this.clients.set(LLM_MODELS.ANTHROPIC_CLAUDE_3_SONNET, this.bedRockService)
+        this.clients.set(LLM_MODELS.ANTHROPIC_CLAUDE_3_5_SONNET, this.bedRockService)
+        this.clients.set(LLM_MODELS.MISTRAL_MISTRAL_7B_INSTRUCT, this.bedRockService)
+        this.clients.set(LLM_MODELS.LLAMA_3, this.bedRockService)
       }
 
 
