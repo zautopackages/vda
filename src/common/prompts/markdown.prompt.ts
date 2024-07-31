@@ -3,7 +3,7 @@ export const MARKDOWN_GENERATOR_PROMPT = `You are an expert in document analysis
 Review the following OCR-extracted text and the corresponding image:
 
 OCR Text:
-{{ocr_content}}
+{{ocrText}}
 
 Understand that this text may be from any page within a multi-page document, not necessarily the first page.
 Analyze the OCR text and image for:
