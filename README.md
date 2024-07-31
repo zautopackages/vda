@@ -1,73 +1,67 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# General Purpose Package for VDA
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This package provides general-purpose functionalities for processing images to extract OCR content and convert it to Markdown. It is designed to be used as a base for building industry-specific applications.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **OCR Extraction**: Extracts text from image buffers using Tesseract and corrects it with an LLM.
+- **Markdown Conversion**: Converts extracted OCR content into Markdown format.
 
 ## Installation
 
-```bash
-$ npm install
+To install this package, use npm:
+
+```sh
+npm install @zauto/vda
 ```
 
-## Running the app
+## Environment Variables
 
-```bash
-# development
-$ npm run start
+The package requires the following environment variables to be set.You can create a `.env` file in the root of your project to set these variables:
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```sh
+AWS_ACCESS_KEY='your-aws-access-key'
+AWS_SECRET_KEY='your-aws-secret-key'
+MARKDOWN_MODEL='your-markdown-model'
+OCR_MODEL='your-ocr-model'
 ```
 
-## Test
+## Supported Models
 
-```bash
-# unit tests
-$ npm run test
+The package supports the following models:
 
-# e2e tests
-$ npm run test:e2e
+- anthropic.claude-3-sonnet-20240229-v1:0
+- anthropic.claude-3-5-sonnet-20240620-v1:0
+- anthropic.claude-3-haiku-20240307-v1:0
+- mistral.mixtral-8x7b-instruct-v0:1
+- meta.llama3-8b-instruct-v1:0
 
-# test coverage
-$ npm run test:cov
-```
 
-## Support
+Ensure that the models in environment variable is set to one of the supported models.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Usage
 
-## Stay in touch
+### MainService
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+The `MainService` provides methods to process images, extract OCR content, and convert it to Markdown.
 
-## License
+#### Methods
 
-Nest is [MIT licensed](LICENSE).
+- **processImage(fileBuffer: Buffer): Promise<ProcessImageResponse>**
+  - Processes an image buffer to extract OCR content and convert it to Markdown.
+  - **Parameters**:
+    - `fileBuffer`: The buffer of the file to be processed.
+  - **Returns**: An object containing the extracted OCR content and converted Markdown content.
+
+- **extractOcrFromImage(fileBuffer: Buffer): Promise<LlmResponse>**
+  - Extracts OCR content from a file buffer.
+  - **Parameters**:
+    - `fileBuffer`: The buffer of the file to be processed.
+  - **Returns**: An object containing the extracted OCR content.
+
+- **convertToMarkdownFromOcr(fileBuffer: Buffer, ocrContent: string): Promise<LlmResponse>**
+  - Converts OCR content to Markdown format.
+  - **Parameters**:
+    - `fileBuffer`: The buffer of the file to be processed.
+    - `ocrContent`: The OCR content to be converted.
+  - **Returns**: An object containing the converted Markdown content.

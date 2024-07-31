@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import { join } from 'path';
 import { LLM_MODELS } from 'src/common/constants/llm.models';
 import { MODEL_PARAMETERS } from 'src/common/constants/model_parameters';
-import { SERVE_STATIC_PATH } from 'src/common/constants/system.constants';
 import { OCR_CORRECTER_PROMPT } from 'src/common/prompts/markdown.prompt';
 import { JsonService } from 'src/common/service/json.service';
 import { extractJsonFromMarkdown } from 'src/common/util/extractjson';
@@ -12,6 +11,7 @@ import { LlmService } from 'src/llm/llm.service';
 const Tesseract = require('tesseract.js');
 
 const rootPath = process.cwd();
+const uploadPath = join(rootPath, 'upload');
 
 @Injectable()
 export class OcrService {
@@ -20,15 +20,24 @@ export class OcrService {
     constructor(
         private readonly llmService: LlmService,
         private readonly jsonService: JsonService
-    ) { }
+    ) {
+        this.ensureUploadDirectoryExists();
+    }
+
+    ensureUploadDirectoryExists() {
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+            this.logger.log(`Created upload directory at ${uploadPath}`);
+        }
+    }
 
     async extractOcr(fileBuffer: Buffer): Promise<LlmResponse> {
         this.logger.debug(`Extracting OCR from image`);
         let result: string;
-        let totalInputTokens, totalOutputTokens;
+        let totalInputTokens: number = 0, totalOutputTokens: number = 0;
         try {
             this.logger.debug(`Extracting Tesseract OCR`);
-            const tempFilePath = join(rootPath, SERVE_STATIC_PATH, `temp_${Date.now()}_${Math.floor(Math.random() * 1000)}`);
+            const tempFilePath = join(uploadPath, `temp_${Date.now()}_${Math.floor(Math.random() * 1000)}`);
             fs.writeFileSync(tempFilePath, fileBuffer);
             result = await this.tesseract(tempFilePath);
             const documents = fs.readFileSync(tempFilePath);
@@ -54,8 +63,8 @@ export class OcrService {
                         top_k,
                         top_p
                     });
-                    totalInputTokens += inputTokens;
-                    totalOutputTokens += outputTokens;
+                    totalInputTokens += parseInt(inputTokens);
+                    totalOutputTokens += parseInt(outputTokens);
                     const response = extractJsonFromMarkdown(content);
                     if (!response) {
                         this.logger.warn(`Failed to extract JSON from the response: ${content}`);
@@ -66,10 +75,10 @@ export class OcrService {
                         }
                         this.logger.debug(`JSON corrected successfully`);
                         this.logger.debug(`OCR extracted successfully`);
-                        return { content: correctedResponse.corrected_text, inputTokens: totalInputTokens, outputTokens:totalOutputTokens, model };
+                        return { content: correctedResponse.corrected_text, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, model };
                     }
                     this.logger.debug(`OCR extracted successfully`);
-                    return { content: response.corrected_text, inputTokens: totalInputTokens, outputTokens:totalOutputTokens, model };
+                    return { content: response.corrected_text, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, model };
                 } catch (error) {
                     this.logger.error(`Attempt ${retry} failed: ${error.message}`);
                     if (retry === 3) throw new Error(`Failed after 3 attempts: ${error.message}`);

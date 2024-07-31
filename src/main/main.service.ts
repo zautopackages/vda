@@ -4,7 +4,6 @@ import { LlmResponse } from 'src/llm/llm.interfaces';
 import { MarkdownService } from 'src/markdown/markdown.service';
 import { OcrService } from 'src/ocr/ocr.service';
 
-
 @Injectable()
 export class MainService{
 
@@ -12,17 +11,23 @@ export class MainService{
         private readonly ocrService: OcrService,
         private readonly markdownService: MarkdownService
     ) {}
-    
+
     /**
      * Processes an image buffer to extract OCR content and convert it to Markdown.
      * @param fileBuffer - The buffer of the file to be processed.
      * @returns An object containing the extracted OCR content and converted Markdown content.
      */
     async processImage(fileBuffer: Buffer): Promise<ProcessImageResponse> {
-        const ocrContent = await this.ocrService.extractOcr(fileBuffer);
-        const markdownContent =await this.markdownService.convertToMarkdown(fileBuffer,ocrContent.content);
-        console.log(ocrContent,markdownContent);
-        return { ocrContent, markdownContent };
+        try{
+            const ocrContent = await this.ocrService.extractOcr(fileBuffer);
+            if(!ocrContent) throw new Error('No OCR content found')
+            const markdownContent =await this.markdownService.convertToMarkdown(fileBuffer,ocrContent.content);
+            if(!markdownContent) throw new Error('No Markdown content found')
+            return { ocrContent, markdownContent };
+        } catch (error) {
+            console.error('Error processing image:', error);
+            throw error;
+        }
     }
 
     /**
@@ -32,7 +37,13 @@ export class MainService{
      * @returns An object containing the extracted OCR content.
      */
     async extractOcrFromImage(fileBuffer: Buffer): Promise<LlmResponse> {
-        return this.ocrService.extractOcr(fileBuffer);
+        try{
+            const response = await this.ocrService.extractOcr(fileBuffer);
+            return response;
+        } catch (error) {
+            console.error('Error extracting OCR:', error);
+            throw error;
+        }
     }
 
     /**
@@ -43,7 +54,13 @@ export class MainService{
      * @returns An object containing the converted Markdown content.
      */
     async convertToMarkdownFromOcr(fileBuffer: Buffer, ocrContent: string): Promise<LlmResponse> {
-        return this.markdownService.convertToMarkdown(fileBuffer, ocrContent);
+        try{
+            const response = await this.markdownService.convertToMarkdown(fileBuffer, ocrContent);
+            return response;
+        } catch (error) {
+            console.error('Error converting to Markdown:', error);
+            throw error;
+        }
     }
      
 }

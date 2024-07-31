@@ -8,5 +8,6 @@ import { MarkdownModule } from 'src/markdown/markdown.module';
   imports: [OcrModule,MarkdownModule],
   controllers: [MainController],
   providers: [MainService],
+  exports: [MainService],
 })
 export class MainModule {}
